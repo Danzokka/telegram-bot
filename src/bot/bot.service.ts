@@ -18,10 +18,36 @@ export class BotService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.bot.start((ctx) => {
-      ctx.reply(
-        'Olá! Eu sou o bot TL;DR. Enviarei resumos de notícias para você!',
-      );
+    this.bot.start(async (ctx) => {
+      const commands = [
+        '/bitcoin - Preço do Bitcoin',
+        '/crypto - Notícias sobre criptomoedas',
+        '/nextjs - Notícias sobre Next.js',
+        '/nestjs - Notícias sobre NestJS',
+        '/aws - Notícias sobre AWS',
+        '/clima <cidade> - Clima de uma cidade',
+        '/tempo <cidade> - Tempo de uma cidade',
+        '/noticia <categoria> - Notícias de uma categoria específica',
+      ];
+
+      const message = `*Comandos Disponíveis:*\n\n${commands.join('\n')}`;
+      await ctx.reply(message, { parse_mode: 'Markdown' });
+    });
+
+    this.bot.command('/', async (ctx) => {
+      const commands = [
+        '/bitcoin - Preço do Bitcoin',
+        '/crypto - Notícias sobre criptomoedas',
+        '/nextjs - Notícias sobre Next.js',
+        '/nestjs - Notícias sobre NestJS',
+        '/aws - Notícias sobre AWS',
+        '/clima <cidade> - Clima de uma cidade',
+        '/tempo <cidade> - Tempo de uma cidade',
+        '/noticia <categoria> - Notícias de uma categoria específica',
+      ];
+
+      const message = `*Comandos Disponíveis:*\n\n${commands.join('\n')}`;
+      await ctx.reply(message, { parse_mode: 'Markdown' });
     });
 
     const channelId = process.env.TELEGRAM_CHAT_ID;
@@ -61,6 +87,56 @@ export class BotService implements OnModuleInit {
       const awsNews = await this.fetchAwsNews();
       ctx.reply(awsNews);
     });
+
+    this.bot.command('clima', async (ctx) => {
+      const city = ctx.message.text.split(' ')[1];
+      if (!city) {
+        return ctx.reply(
+          'Por favor, forneça uma cidade. Exemplo: /clima São Paulo',
+        );
+      }
+
+      const weatherData = await this.fetchWeather(city);
+      await ctx.reply(weatherData, { parse_mode: 'Markdown' });
+    });
+
+    this.bot.command('tempo', async (ctx) => {
+      const city = ctx.message.text.split(' ')[1];
+      if (!city) {
+        return ctx.reply(
+          'Por favor, forneça uma cidade. Exemplo: /tempo Rio de Janeiro',
+        );
+      }
+
+      const weatherData = await this.fetchWeather(city);
+      await ctx.reply(weatherData, { parse_mode: 'Markdown' });
+    });
+
+    this.bot.command('noticia', async (ctx) => {
+      const category = ctx.message.text.split(' ')[1];
+      if (!category) {
+        return ctx.reply(
+          'Por favor, forneça uma categoria. Exemplo: /noticia tecnologia',
+        );
+      }
+
+      const newsData = await this.fetchNewsByCategory(category);
+      await ctx.reply(newsData, { parse_mode: 'Markdown' });
+    });
+
+    this.bot.telegram.setMyCommands([
+      { command: 'bitcoin', description: 'Preço do Bitcoin' },
+      { command: 'crypto', description: 'Notícias sobre criptomoedas' },
+      { command: 'nextjs', description: 'Notícias sobre Next.js' },
+      { command: 'nestjs', description: 'Notícias sobre NestJS' },
+      { command: 'aws', description: 'Notícias sobre AWS' },
+      { command: 'clima', description: 'Clima de uma cidade' },
+      { command: 'tempo', description: 'Tempo de uma cidade' },
+      {
+        command: 'noticia',
+        description: 'Notícias de uma categoria específica',
+      },
+    ]);
 
     await this.bot.launch();
 
@@ -153,6 +229,28 @@ export class BotService implements OnModuleInit {
       return message;
     } catch (error) {
       return `Erro ao buscar notícias de ${category}.`;
+    }
+  }
+
+  private async fetchWeather(city: string): Promise<string> {
+    try {
+      const apiKey = process.env.WEATHER_API_KEY;
+      if (!apiKey) {
+        throw new Error('A chave da API OpenWeatherMap não está configurada.');
+      }
+
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city.split('_').join(' '))}&appid=${apiKey}&units=metric&lang=pt_br`,
+      );
+
+
+      const { weather, main, name } = response.data;
+      return `🌤️ *Clima em ${name}:*\n\n- Condição: ${weather[0].description}\n- Temperatura: ${main.temp}°C\n- Sensação Térmica: ${main.feels_like}°C\n- Umidade: ${main.humidity}%`;
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        return 'Cidade não encontrada. Verifique o nome e tente novamente.';
+      }
+      return 'Erro ao buscar informações climáticas. Tente novamente mais tarde.';
     }
   }
 }
