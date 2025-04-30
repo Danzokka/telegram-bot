@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  tldr-bot:
+    build: .
+    container_name: tldr-bot
+    ports:
+      - "5000:5000"
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - OWNER_CHAT=${OWNER_CHAT}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+    restart: always
